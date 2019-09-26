@@ -892,7 +892,7 @@
 		</data>
 	</multivariateWishartPrior>
 
-	<arbitraryBranchRates id="branchRatesDiffusion">
+	<arbitraryBranchRates id="branchRatesDiffusion" centerAtOne="false" randomizeRates="true">
 		<treeModel idref="treeModel"/>
 		<rates>
 			<parameter id="branchRatesDiffusion.rates" dimension="206"/>
@@ -1039,7 +1039,7 @@
 			<treeModel idref="treeModel"/>
 		</wilsonBalding>
 
-		<hamiltonianMonteCarloOperator weight="1.75" nSteps="10" stepSize="0.1" mode="vanilla"
+		<hamiltonianMonteCarloOperator weight="30" nSteps="10" stepSize="0.1" mode="vanilla"
 			drawVariance="1.0" autoOptimize="true">
 			<jointGradient>
 				<gradient>
@@ -1070,7 +1070,7 @@
 
 	</operators>
 
-	<mcmc autoOptimize="true" chainLength="25000000" id="mcmc" operatorAnalysis="WNV_nonFixed_HMC_OperatorAnalysis.ops">
+	<mcmc autoOptimize="true" chainLength="35000" id="mcmc" operatorAnalysis="WNV_nonFixed_HMC_OperatorAnalysis.ops">
 		<posterior id="posterior">
 			<prior id="prior">
 				<jeffreysPrior>
@@ -1103,7 +1103,7 @@
 		</posterior>
 		<operators idref="operators"/>
 
-		<log id="screenLog" logEvery="25000000">
+		<log id="screenLog" logEvery="100000">
 			<column dp="4" label="Posterior" width="12">
 				<posterior idref="posterior"/>
 			</column>
@@ -1130,62 +1130,10 @@
 			</column>
 		</log>
 		
-		<log fileName="WNV_nonFixed_HMC_rates.log" logEvery="50">
+		<log fileName="WNV_nonFixed_HMC_rates.log" logEvery="7">
 			<parameter idref="branchRatesDiffusion.rates"/>
 		</log>
-				<log fileName="WNV_nonFixed_HMC_sd.log" logEvery="50">
-			<parameter idref="ucldDiffusion.stdev"/>
-		</log>
 		
-		<log fileName="WNV_nonFixed_HMC_precMatrix.log" logEvery="50">
-			<matrixParameter idref="precisionMatrix"/>
-		</log>
-		
-		<log fileName="WNV_nonFixed_HMC_varMatrix.log" logEvery="50">
-			<matrixInverse id="varianceMatrix">
-				<matrixParameter idref="precisionMatrix"/>
-			</matrixInverse>
-		</log>
-		
-		<log fileName="WNV_nonFixed_HMC.log" id="fileLog1" logEvery="50">
-			<posterior idref="posterior"/>
-			<prior idref="prior"/>
-			<likelihood idref="likelihood"/>
-			<rateStatistic idref="meanRate"/>
-			<parameter idref="treeModel.rootHeight"/>
-			<parameter idref="skyline.popSize"/>
-			<parameter idref="skyline.groupSize"/>
-			<parameter idref="gtr.ac"/>
-			<parameter idref="gtr.ag"/>
-			<parameter idref="gtr.at"/>
-			<parameter idref="gtr.cg"/>
-			<parameter idref="gtr.gt"/>
-			<parameter idref="siteModel.alpha"/>
-			<parameter idref="ucld.mean"/>
-			<parameter idref="ucld.stdev"/>
-			<rateStatistic idref="coefficientOfVariation"/>
-			<rateCovarianceStatistic idref="covariance"/>
-			<treeLikelihood idref="treeLikelihood"/>
-			<generalizedSkyLineLikelihood idref="skyline"/>
-			<parameter idref="ucldDiffusion.stdev"/>
-			<matrixParameter idref="precisionMatrix"/>
-			<productStatistic idref="treeLengthPrecision1"/>
-			<productStatistic idref="treeLengthPrecision2"/>
-			<correlation idref="locationCorrelation"/>
-			<rateStatistic idref="coefficientOfVariationDiffusion"/>
-			<rateCovarianceStatistic idref="covarianceDiffusion"/>
-            <traitLikelihood idref="traitLikelihood"/>
-		</log>
-
-        <logTree fileName="WNV_nonFixed_HMC_geo.trees" id="treeFileLog2" logEvery="2500" nexusFormat="true" sortTranslationTable="true">
-			<treeModel idref="treeModel"/>
-			<posterior idref="posterior"/>
-			<arbitraryBranchRates idref="branchRatesDiffusion"/>
-			<multivariateDiffusionModel idref="diffusionModel"/>
-            <traitDataLikelihood idref="traitLikelihood"/>
-            <transformedTrait idref ="logBranchRates"/>
-		</logTree>
-
 	</mcmc>
 
 	<report fileName = "WNV_nonFixed_HMC_time.txt">
