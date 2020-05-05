@@ -10983,18 +10983,21 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
     
     <!-- Diffusion Model -->
     <multivariateDiffusionModel id="diffusionModel">
-		<precisionMatrix>
-			<matrixParameter id="precisionMatrix">
-				<parameter id="col1" value="0.05 0.002 0.002 0.002 0.002"/>
-				<parameter id="col2" value="0.002 0.05 0.002 0.002 0.002"/>
-				<parameter id="col3" value="0.002 0.002 0.05 0.002 0.002"/>
-				<parameter id="col4" value="0.002 0.002 0.002 0.05 0.002"/>
-				<parameter id="col5" value="0.002 0.002 0.002 0.002 0.05"/>
-			</matrixParameter>
-		</precisionMatrix>
+	<precisionMatrix>
+      		<cachedMatrixInverse id="precisionMatrix">
+        	<compoundSymmetricMatrix id="varianceMatrix" asCorrelation="true" isCholesky="true">
+          <diagonal>
+            <parameter id="variance.diagonal" value="1 1 1 1 1" lower="0.0 0.0 0.0 0.0 0.0"/>
+          </diagonal>
+          <offDiagonal>
+            <parameter id="variance.correlation" value="0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0"/>
+          </offDiagonal>
+        </compoundSymmetricMatrix>
+      </cachedMatrixInverse>
+    </precisionMatrix>
 	</multivariateDiffusionModel>
 
-	<multivariateWishartPrior id="precisionPrior" df="5">
+	<!-- <multivariateWishartPrior id="precisionPrior" df="5">
 		<scaleMatrix>
 		<matrixParameter>
 				<parameter value="1.0 0.0 0.0 0.0 0.0"/>
@@ -11007,7 +11010,7 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
 		<data>
 			<matrixParameter idref="precisionMatrix"/>
 		</data>
-	</multivariateWishartPrior>
+	</multivariateWishartPrior> -->
 
 	<traitDataLikelihood id="traitLikelihood" traitName="lifeTraits" forceFullPrecision="false">
 		<multivariateDiffusionModel idref="diffusionModel"/>
@@ -11028,19 +11031,6 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
         </conjugateRootPrior>
     </traitDataLikelihood>
 
-<!-- Statistics -->
-	 	<correlationMatrix id="traitsCorrelation" invert="true">            
- 		<matrixParameter idref="precisionMatrix"/>        
- 	</correlationMatrix>
-
-    <treeLengthStatistic id="treeLength">
-         <treeModel idref="treeModel"/>
-     </treeLengthStatistic>
-	
- 	<matrixInverse id="varianceMatrix">
-		<matrixParameter idref="precisionMatrix"/>
-	</matrixInverse>
-	
 	<!--Diffusion parameter statistics -->
 	
 	<traitDataContinuousDiffusionStatistic id="weighted.quadratic.statistic" traitName="lifeTraits" weightingScheme="weighted" 
@@ -11085,22 +11075,86 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
  		<traitDataLikelihood idref="traitLikelihood"/>
  	</traitDataContinuousDiffusionStatistic>
  
+
+ <!--   concatenate correlation matrix and sd matrix -->
+    <compoundParameter id="correlationAndDiag">
+    <parameter idref="variance.correlation"/>
+    <parameter idref="variance.diagonal"/>
+  </compoundParameter>
+
+<!--   gradient on correlations -->
+   <precisionGradient id="precisionCorrelationGradient" parameter="precisionCorrelation">
+<!--
+    <wishartStatistics traitName="lifeTraits">
+      <traitDataLikelihood idref="traitLikelihood"/>
+    </wishartStatistics>
+ -->
+    <traitDataLikelihood idref="traitLikelihood"/>
+    <cachedMatrixInverse idref="precisionMatrix"/>
+  </precisionGradient>
+
+<!--  gradient on sd diagonal matrix -->
+  <precisionGradient id="precisionDiagonalGradient" parameter="precisionDiagonal">
+<!--
+    <wishartStatistics traitName="lifeTraits">
+      <traitDataLikelihood idref="traitLikelihood"/>
+    </wishartStatistics>
+ -->
+    <traitDataLikelihood idref="traitLikelihood"/>
+    <cachedMatrixInverse idref="precisionMatrix"/>
+  </precisionGradient>
+
+<!--  LKJ prior on correlation matrix -->
+  <LKJCorrelationPrior id="prior.cholesky" shapeParameter="1.0" dimension="5" cholesky="true">
+    <data>
+      <parameter idref="variance.correlation"/>
+    </data>
+  </LKJCorrelationPrior>
+
+<!-- log normal prior on sd diagonal matrix -->
+  <logNormalPrior id="prior.diagonal" mean="0.0" stdev="1.0" offset="0.0" meanInRealSpace="false">
+    <parameter idref="variance.diagonal"/>
+  </logNormalPrior>
+
+<!-- gradient of likelihood and prior on sd matrix -->
+  <jointGradient id="jointGradientForDiagonal">
+    <gradient idref="precisionDiagonalGradient"/>
+    <gradient>
+      <distributionLikelihood idref="prior.diagonal"/>
+      <parameter idref="variance.diagonal"/>
+    </gradient>
+  </jointGradient>
+
+<!-- gradient of likelihood and prior on corr matrix -->
+  <jointGradient id="jointGradientForCorrelation">
+    <gradient idref="precisionCorrelationGradient"/>
+    <gradient>
+      <LKJCorrelationPrior idref="prior.cholesky"/>
+    </gradient>
+  </jointGradient>
+
  <operators id="operators" optimizationSchedule="log">
  
-		<precisionGibbsOperator weight="5">
-					<wishartStatistics traitName="lifeTraits">
-						<traitDataLikelihood idref="traitLikelihood"/>
-					</wishartStatistics>
-            <multivariateWishartPrior idref="precisionPrior"/>
-        </precisionGibbsOperator>
+		<hamiltonianMonteCarloOperator weight="5.0" nSteps="10" stepSize="0.01" mode="nuts" drawVariance="1.0">
+      <compoundParameter idref="correlationAndDiag"/>
+      <compoundGradient>
+        <jointGradient idref="jointGradientForCorrelation"/>
+        <jointGradient idref="jointGradientForDiagonal"/>
+      </compoundGradient>
+
+      <multivariateCompoundTransform>
+        <LKJTransform dimension="5"/>
+        <transform type="log" dim="5"/>
+      </multivariateCompoundTransform>
+    </hamiltonianMonteCarloOperator>
 
 	</operators>
 
-	<!-- <mcmc id="mcmc" chainLength="20000" autoOptimize="true" autoOptimizeDelay="10000"> -->
-	<mcmc id="mcmc" chainLength="100000" autoOptimize="true">  
+	<mcmc id="mcmc" chainLength="50000" autoOptimize="true">  
 		<posterior id="posterior">
 			<prior id="prior">
-				<multivariateWishartPrior idref="precisionPrior"/>			
+			  <distributionLikelihood idref="prior.diagonal"/>
+        <LKJCorrelationPrior idref="prior.cholesky"/>
 			</prior>
 			<likelihood id="likelihood">
                 <traitDataLikelihood idref="traitLikelihood"/>
@@ -11120,30 +11174,19 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
 				<likelihood idref="likelihood"/>
 			</column>
 		</log>
-				
-		<log id="fileLog1" logEvery="10" fileName="mammals_strictBD_general.log">
-			<posterior idref="posterior"/>
-			<prior idref="prior"/>
-			<likelihood idref="likelihood"/>	
-			<traitDataContinuousDiffusionStatistic idref="weighted.quadratic.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="weighted.linear.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="unweighted.quadratic.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="unweighted.linear.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="indie.w.q.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="indie.w.l.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="indie.un.q.statistic"/>
-			<traitDataContinuousDiffusionStatistic idref="indie.un.l.statistic"/>
-		</log>
 		
-		<log fileName="mammals_strictBD_correlation.log" logEvery="10">
-		<correlationMatrix idref="traitsCorrelation"/>
-		</log>
-		
-<!-- 
-		<log fileName="mammals_strictBD_varMatrix.log" logEvery="10">
+		<log fileName="mammals_strictBD_varMatrix.log" logEvery="5">
 			<matrixInverse idref="varianceMatrix"/>
 		</log>
- -->
+
+    	<log id="fileLog2" logEvery="5" fileName="mammals_strictBD_correlationMatrix_lkj.log">
+      <joint idref="posterior"/>
+      <prior idref="prior"/>
+      <likelihood idref="likelihood"/>
+      <parameter idref="variance.correlation"/>
+      <parameter idref="variance.diagonal"/>
+      <matrixParameter idref="precisionMatrix"/>
+	</log>
 		
 	</mcmc>		
 	
