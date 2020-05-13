@@ -1056,7 +1056,7 @@
 
 	</operators>
 
-	<mcmc autoOptimize="true" chainLength="75000000" id="mcmc">
+	<mcmc autoOptimize="true" chainLength="475000000" id="mcmc">
 		<posterior id="posterior">
 			<prior id="prior">
 				<jeffreysPrior>
