@@ -11064,7 +11064,7 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
 		<arbitraryBranchRates idref="branchRatesDiffusion"/>
 	</rateCovarianceStatistic>
 
-	<traitDataLikelihood id="traitLikelihood" traitName="lifeTraits" forceFullPrecision="false">
+	<traitDataLikelihood id="traitLikelihood" traitName="lifeTraits" forceFullPrecision="false" scaleByTime="true">
 		<multivariateDiffusionModel idref="diffusionModel"/>
 		<treeModel idref="treeModel"/>
 		<traitParameter>
@@ -11188,7 +11188,7 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
   </LKJCorrelationPrior>
 
 <!-- log normal prior on sd diagonal matrix -->
-  <logNormalPrior id="prior.diagonal" mean="0.0" stdev="1.0" offset="0.0" meanInRealSpace="false">
+  <logNormalPrior id="prior.diagonal" mean="0.0" stdev="4.0" offset="0.0" meanInRealSpace="false">
     <parameter idref="variance.diagonal"/>
   </logNormalPrior>
 
@@ -11305,11 +11305,6 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
 			<traitDataContinuousDiffusionStatistic idref="indie.un.l.statistic"/>
 		</log>
 
-<!--
-		<log fileName = "mammals_HMC_correlationMatrix" logEvery = "10">
-			<correlationMatrix idref="traitsCorrelation"/>
-		</log>
- -->
   	<log id="fileLog2" logEvery="10" fileName="mammals_HMC_correlationMatrix_lkj.log">
       <joint idref="posterior"/>
       <prior idref="prior"/>
@@ -11318,17 +11313,6 @@ Traits are: BM (bodymass), LS (litter size), GS (gestation length), WA (weaning 
       <parameter idref="variance.diagonal"/>
       <matrixParameter idref="precisionMatrix"/>
 	</log>
-		<log fileName = "mammals_HMC_rates_lkj.log" logEvery = "10">
-			<parameter idref="branchRatesDiffusion.rates"/>
-		</log>
-
-
-
-		<!--
-<log fileName="mammals_HMC_varMatrix.log" logEvery="10">
-			<matrixInverse idref="varianceMatrix"/>
-		</log>
- -->
 
 	</mcmc>
 
